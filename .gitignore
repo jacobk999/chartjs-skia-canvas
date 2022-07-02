@@ -105,6 +105,3 @@ typings/
 # reports
 /reports/**
 !/reports/index.html
-
-#dist
-dist
