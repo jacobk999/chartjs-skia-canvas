@@ -1,5 +1,5 @@
 import { Chart as ChartJS, ChartComponentLike, ChartConfiguration } from 'chart.js';
-import { Canvas, ExportFormat } from 'skia-canvas';
+import { Canvas, ExportFormat, Image } from 'skia-canvas';
 import { BackgroundColourPlugin } from './backgroundColourPlugin';
 import { freshRequire } from './freshRequire';
 

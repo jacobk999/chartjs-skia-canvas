@@ -100,7 +100,7 @@ class ChartJSSkiaCanvas {
         configuration.options.responsive = false;
         configuration.options.animation = false;
         const context = canvas.getContext('2d');
-        global.Image = Image; // Some plugins use this API
+        global.Image = skia_canvas_1.Image; // Some plugins use this API
         const chart = new this._chartJs(context, configuration);
         delete global.Image;
         return chart;
