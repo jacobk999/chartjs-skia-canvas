@@ -1,16 +1,16 @@
 import { AssertionError } from 'assert';
-import { promises as fs } from 'fs';
-import { platform, EOL } from 'os';
-import { join } from 'path';
-import { Readable } from 'stream';
-import { describe, it } from 'mocha';
-import { Stream } from 'stream';
 import { ChartConfiguration } from 'chart.js';
+import { promises as fs } from 'fs';
+import { describe, it } from 'mocha';
+import { EOL, platform } from 'os';
+import { join } from 'path';
 import resemble /*, { ResembleSingleCallbackComparisonOptions, ResembleSingleCallbackComparisonResult }*/ from 'resemblejs';
+import { FontLibrary } from 'skia-canvas/lib';
+import { Stream } from 'stream';
 
-import { ChartJSNodeCanvas, ChartCallback } from './';
+import { ChartCallback, ChartJSSkiaCanvas } from './';
 
-describe(ChartJSNodeCanvas.name, () => {
+describe(ChartJSSkiaCanvas.name, () => {
 
 	const chartColors = {
 		red: 'rgb(255, 99, 132)',
@@ -70,13 +70,13 @@ describe(ChartJSNodeCanvas.name, () => {
 	};
 
 	it('works with render to buffer', async () => {
-		const chartJSNodeCanvas = new ChartJSNodeCanvas({ width, height, chartCallback, backgroundColour: 'white' });
+		const chartJSNodeCanvas = new ChartJSSkiaCanvas({ width, height, chartCallback, backgroundColour: 'white' });
 		const actual = await chartJSNodeCanvas.renderToBuffer(configuration);
 		await assertImage(actual, 'render-to-buffer');
 	});
 
 	it('works with render to data url', async () => {
-		const chartJSNodeCanvas = new ChartJSNodeCanvas({ width, height, chartCallback, backgroundColour: 'white' });
+		const chartJSNodeCanvas = new ChartJSSkiaCanvas({ width, height, chartCallback, backgroundColour: 'white' });
 		const actual = await chartJSNodeCanvas.renderToDataURL(configuration);
 		const extension = '.txt';
 		const fileName = 'render-to-data-URL';
@@ -103,15 +103,8 @@ describe(ChartJSNodeCanvas.name, () => {
 		}
 	});
 
-	it('works with render to stream', async () => {
-		const chartJSNodeCanvas = new ChartJSNodeCanvas({ width, height, chartCallback, backgroundColour: 'white' });
-		const stream = chartJSNodeCanvas.renderToStream(configuration);
-		const actual = await streamToBuffer(stream);
-		await assertImage(actual, 'render-to-stream');
-	});
-
 	it('works with registering plugin', async () => {
-		const chartJSNodeCanvas = new ChartJSNodeCanvas({
+		const chartJSNodeCanvas = new ChartJSSkiaCanvas({
 			width, height, backgroundColour: 'white', plugins: {
 				modern: ['chartjs-plugin-annotation']
 			}
@@ -187,7 +180,7 @@ describe(ChartJSNodeCanvas.name, () => {
 	});
 
 	it('works with self registering plugin', async () => {
-		const chartJSNodeCanvas = new ChartJSNodeCanvas({
+		const chartJSNodeCanvas = new ChartJSSkiaCanvas({
 			width, height, backgroundColour: 'white', plugins: {
 				requireLegacy: [
 					'chartjs-plugin-datalabels'
@@ -261,12 +254,14 @@ describe(ChartJSNodeCanvas.name, () => {
 	// });
 
 	it('works with custom font', async () => {
-		const chartJSNodeCanvas = new ChartJSNodeCanvas({
+		const chartJSNodeCanvas = new ChartJSSkiaCanvas({
 			width, height, backgroundColour: 'white', chartCallback: (ChartJS) => {
 				ChartJS.defaults.font.family = 'VTKS UNAMOUR';
 			}
 		});
-		chartJSNodeCanvas.registerFont('./testData/VTKS UNAMOUR.ttf', { family: 'VTKS UNAMOUR' });
+
+		FontLibrary.use("VTKS UNAMOUR", './testData/VTKS UNAMOUR.ttf');
+
 		const actual = await chartJSNodeCanvas.renderToBuffer({
 			type: 'bar',
 			data: {
@@ -313,7 +308,7 @@ describe(ChartJSNodeCanvas.name, () => {
 
 	it('works without background color', async () => {
 
-		const chartJSNodeCanvas = new ChartJSNodeCanvas({ width, height, chartCallback });
+		const chartJSNodeCanvas = new ChartJSSkiaCanvas({ width, height, chartCallback });
 		const actual = await chartJSNodeCanvas.renderToBuffer(configuration);
 		await assertImage(actual, 'no-background-color');
 	});
@@ -426,22 +421,6 @@ describe(ChartJSNodeCanvas.name, () => {
 					}
 				});
 			});
-	}
-
-	function streamToBuffer(stream: Readable): Promise<Buffer> {
-		const data: Array<Buffer> = [];
-		return new Promise((resolve, reject) => {
-			stream.on('data', (chunk: Buffer) => {
-				data.push(chunk);
-			});
-			stream.on('end', () => {
-				const buffer = Buffer.concat(data);
-				resolve(buffer);
-			});
-			stream.on('error', (error) => {
-				reject(error);
-			});
-		});
 	}
 
 	function writeDiff(filepath: string, png: Stream | Buffer): Promise<void> {

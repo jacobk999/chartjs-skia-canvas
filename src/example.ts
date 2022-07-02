@@ -1,6 +1,6 @@
-import { ChartJSNodeCanvas, ChartCallback } from './';
 import { ChartConfiguration } from 'chart.js';
 import { promises as fs } from 'fs';
+import { ChartCallback, ChartJSSkiaCanvas } from './';
 
 async function main(): Promise<void> {
 
@@ -49,7 +49,7 @@ async function main(): Promise<void> {
 		ChartJS.defaults.responsive = true;
 		ChartJS.defaults.maintainAspectRatio = false;
 	};
-	const chartJSNodeCanvas = new ChartJSNodeCanvas({ width, height, chartCallback });
+	const chartJSNodeCanvas = new ChartJSSkiaCanvas({ width, height, chartCallback });
 	const buffer = await chartJSNodeCanvas.renderToBuffer(configuration);
 	await fs.writeFile('./example.png', buffer, 'base64');
 }

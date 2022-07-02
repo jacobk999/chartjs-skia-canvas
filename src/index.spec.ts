@@ -1,12 +1,13 @@
-import { Assert } from 'ts-std-lib';
-import { describe, it } from 'mocha';
 import { ChartConfiguration } from 'chart.js';
+import { describe, it } from 'mocha';
+import { ExportFormat } from 'skia-canvas/lib';
+import { Assert } from 'ts-std-lib';
 
-import { ChartJSNodeCanvas, ChartCallback, CanvasType, MimeType, ChartJSNodeCanvasPlugins } from './';
+import { ChartCallback, ChartJSSkiaCanvas, ChartJSSkiaCanvasPlugins } from './';
 
 const assert = new Assert();
 
-describe(ChartJSNodeCanvas.name, () => {
+describe(ChartJSSkiaCanvas.name, () => {
 
 	// const chartColors = {
 	// 	red: 'rgb(255, 99, 132)',
@@ -61,19 +62,19 @@ describe(ChartJSNodeCanvas.name, () => {
 		} as any
 	};
 
-	function createSUT(type?: CanvasType, plugins?: ChartJSNodeCanvasPlugins): ChartJSNodeCanvas {
+	function createSUT(plugins?: ChartJSSkiaCanvasPlugins): ChartJSSkiaCanvas {
 
 		const chartCallback: ChartCallback = (ChartJS) => {
 
 			ChartJS.defaults.responsive = true;
 			ChartJS.defaults.maintainAspectRatio = false;
 		};
-		return new ChartJSNodeCanvas({ width, height, chartCallback, type, plugins });
+		return new ChartJSSkiaCanvas({ width, height, chartCallback, plugins });
 	}
 
-	const mimeTypes: ReadonlyArray<MimeType> = ['image/png', 'image/jpeg'];
+	const mimeTypes: ReadonlyArray<ExportFormat> = ['png', 'jpeg'];
 
-	describe(ChartJSNodeCanvas.prototype.renderToDataURL.name, () => {
+	describe(ChartJSSkiaCanvas.prototype.renderToDataURL.name, () => {
 
 		describe(`given canvasType 'undefined'`, () => {
 
@@ -100,33 +101,7 @@ describe(ChartJSNodeCanvas.name, () => {
 		});
 	});
 
-	describe(ChartJSNodeCanvas.prototype.renderToDataURLSync.name, () => {
-
-		describe(`given canvasType 'undefined'`, () => {
-
-			const canvasType = undefined;
-
-			mimeTypes.forEach((mimeType) => {
-
-				describe(`given mimeType '${mimeType}'`, () => {
-
-					it('renders data url', () => {
-						const chartJSNodeCanvas = createSUT(canvasType);
-						const dataUrl = chartJSNodeCanvas.renderToDataURLSync(configuration, mimeType);
-						assert.equal(dataUrl.startsWith(`data:${mimeType};base64,`), true);
-					});
-
-					it('renders data url in parallel', () => {
-						const chartJSNodeCanvas = createSUT(canvasType);
-						const dataUrls = Array(3).fill(undefined).map(() => chartJSNodeCanvas.renderToDataURLSync(configuration, mimeType));
-						dataUrls.forEach((dataUrl) => assert.equal(dataUrl.startsWith(`data:${mimeType};base64,`), true));
-					});
-				});
-			});
-		});
-	});
-
-	describe(ChartJSNodeCanvas.prototype.renderToBuffer.name, () => {
+	describe(ChartJSSkiaCanvas.prototype.renderToBuffer.name, () => {
 
 		describe(`given canvasType 'undefined'`, () => {
 
@@ -140,69 +115,6 @@ describe(ChartJSNodeCanvas.name, () => {
 						const chartJSNodeCanvas = createSUT(canvasType);
 						const image = await chartJSNodeCanvas.renderToBuffer(configuration, mimeType);
 						assert.equal(image instanceof Buffer, true);
-					});
-				});
-			});
-		});
-	});
-
-	describe(ChartJSNodeCanvas.prototype.renderToBufferSync.name, () => {
-
-		([
-			[undefined, mimeTypes],
-			['svg', ['image/svg+xml']],
-			['pdf', ['application/pdf']]
-		] as ReadonlyArray<[CanvasType, ReadonlyArray<MimeType | 'application/pdf' | 'image/svg+xml'>]>).forEach(([canvasType, extendedMimeTypes]) => {
-
-			describe(`given canvasType '${canvasType}'`, () => {
-
-				extendedMimeTypes.forEach((mimeType) => {
-
-					describe(`given mimeType '${mimeType}'`, () => {
-
-						it('renders chart', async () => {
-							const chartJSNodeCanvas = createSUT(canvasType);
-							const image = chartJSNodeCanvas.renderToBufferSync(configuration, mimeType);
-							assert.equal(image instanceof Buffer, true);
-						});
-					});
-				});
-			});
-		});
-	});
-
-	describe(ChartJSNodeCanvas.prototype.renderToStream.name, () => {
-
-		([
-			[undefined, mimeTypes],
-			['pdf', ['application/pdf']]
-		] as ReadonlyArray<[CanvasType | undefined, ReadonlyArray<MimeType | 'application/pdf'>]>).forEach(([canvasType, extendedMimeTypes]) => {
-
-			describe(`given canvasType '${canvasType}'`, () => {
-
-				extendedMimeTypes.forEach((mimeType) => {
-
-					describe(`given extended mimeType '${mimeType}'`, () => {
-
-						it('renders stream', (done) => {
-							const chartJSNodeCanvas = createSUT(canvasType);
-							const stream = chartJSNodeCanvas.renderToStream(configuration, mimeType);
-							const data: Array<Buffer> = [];
-							stream.on('data', (chunk: Buffer) => {
-								data.push(chunk);
-							});
-							stream.on('end', () => {
-								assert.equal(Buffer.concat(data).length > 0, true);
-								done();
-							});
-							stream.on('finish', () => {
-								assert.equal(Buffer.concat(data).length > 0, true);
-								done();
-							});
-							stream.on('error', (error) => {
-								done(error);
-							});
-						});
 					});
 				});
 			});
