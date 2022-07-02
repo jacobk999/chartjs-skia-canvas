@@ -105,3 +105,5 @@ typings/
 # reports
 /reports/**
 !/reports/index.html
+
+.yarn/install-state.gz
